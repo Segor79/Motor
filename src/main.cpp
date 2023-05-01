@@ -191,7 +191,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 */
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 {
-    // uint32_t er = HAL_CAN_GetError(hcan);
+    uint32_t er = HAL_CAN_GetError(hcan);
 //    sprintf(trans_str,"ER CAN %lu %08lX", er, er);
 //    HAL_UART_Transmit(&huart1, (uint8_t*)trans_str, strlen(trans_str), 100);
 }
@@ -443,7 +443,7 @@ static void MX_CAN_Init(void)
 {
 
   /* USER CODE BEGIN CAN_Init 0 */
-	CAN_FilterTypeDef  sFilterConfig;
+
   /* USER CODE END CAN_Init 0 */
 
   /* USER CODE BEGIN CAN_Init 1 */
@@ -466,21 +466,7 @@ static void MX_CAN_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN_Init 2 */
-	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT; 
-	sFilterConfig.FilterIdHigh = 0x0000;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	//sFilterConfig.SlaveStartFilterBank = 14;
 
-	if(HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
-	{
-	Error_Handler();
-	}
   /* USER CODE END CAN_Init 2 */
 
 }
