@@ -43,8 +43,10 @@
 #define ClearBit(reg, bit)       reg &= (~(1<<(bit)))   //пример: ClearBit(PORTB, 1); //сбросить 1-й бит PORTB
 #define SetBit(reg, bit)          reg |= (1<<(bit))     //пример: SetBit(PORTB, 3); //установить 3-й бит PORTB
 #define BitIsClear(reg, bit)    ((reg & (1<<(bit))) == 0)		//пример: if (BitIsClear(PORTB,1)) {...} //если бит очищен
-//	#define BitIsSet(reg, bit)       ((reg & (1<<(bit))) != 0)		//пример: if(BitIsSet(PORTB,2)) {...} //если бит установлен
+#define BitIsSet(reg, bit)       ((reg & (1<<(bit))) != 0)		//пример: if(BitIsSet(PORTB,2)) {...} //если бит установлен
 
+#define receiveBuff_huart3_Size 500
+#define receiveBuff_huart2_Size 500
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -83,13 +85,13 @@ UART_HandleTypeDef huart3;
 	uint32_t Timer1 = 0;
 	
 //------------------------ For UART	
-	uint8_t receiveBuff_huart3[200];
-	uint8_t receiveBuffStat_huart3[200];
+	uint8_t receiveBuff_huart3[receiveBuff_huart3_Size];
+	uint8_t receiveBuffStat_huart3[receiveBuff_huart3_Size];
 	uint16_t ReciveUart3Size = 0;
 	uint8_t FlagReciveUART3 = 0;
 	
-	uint8_t receiveBuff_huart2[200];
-	uint8_t receiveBuffStat_huart2[200];
+	uint8_t receiveBuff_huart2[receiveBuff_huart2_Size];
+	uint8_t receiveBuffStat_huart2[receiveBuff_huart2_Size];
 	uint16_t ReciveUart2Size = 0;
 	uint8_t FlagReciveUART2 = 0;
 	
@@ -120,13 +122,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		// что нибудь делаем
 		
-		HAL_UART_Receive_IT(&huart2, (uint8_t*)receiveBuff_huart2, 16);	 // настроить прерывание huart на прием по достижения количества 16 байт
+		// HAL_UART_Receive_IT(&huart2, (uint8_t*)receiveBuff_huart2, 16);	 // настроить прерывание huart на прием по достижения количества 16 байт
 	}
 	if(huart == &huart3)
 	{
 		// что нибудь делаем
 		
-		HAL_UART_Receive_IT(&huart3, (uint8_t*)receiveBuff_huart3, 16);	 // настроить прерывание huart на прием по достижения количества 16 байт
+		// HAL_UART_Receive_IT(&huart3, (uint8_t*)receiveBuff_huart3, 16);	 // настроить прерывание huart на прием по достижения количества 16 байт
 	}
 }
 
@@ -134,39 +136,50 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size){
 	if(huart->Instance == USART3){
 		ReciveUart3Size = Size;
-		if(Size == 16 && receiveBuff_huart3[0]== 0x05){	 
-			FlagReciveUART3 = 1;
+		if(Size >0 ){	 
 			
 			// переписать пакет в буфер для хранения
 			for(uint16_t i = 0; i != Size; i++){
 				receiveBuffStat_huart3[i] = receiveBuff_huart3[i];
 			}
-			HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, 1000);		// настроить huart на прием следующего пакета
+		  HAL_UART_Transmit_IT(&huart3, receiveBuffStat_huart3, Size);
+			HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, receiveBuff_huart3_Size);		// настроить huart на прием следующего пакета
 			
 		}
 		else {
-			HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, 1000);		// настроить huart на прием следующего пакета
+			HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, receiveBuff_huart3_Size);		// настроить huart на прием следующего пакета
 		}
 	}
 	if(huart->Instance == USART2){
 		ReciveUart2Size = Size;
-		if(Size == 16 && receiveBuff_huart2[0]== 0x05){	 
-			FlagReciveUART2 = 1;
+		if(Size >0){	 
 			
 			// переписать пакет в буфер для хранения
 			for(uint16_t i = 0; i != Size; i++){
 				receiveBuffStat_huart2[i] = receiveBuff_huart2[i];
 			}
-			HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, 200);		// настроить huart на прием следующего пакета
+      HAL_UART_Transmit_IT(&huart2, receiveBuffStat_huart2, Size);
+			HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, receiveBuff_huart2_Size);		// настроить huart на прием следующего пакета
 			
 		}
 		else {
-			HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, 200);		// настроить huart на прием следующего пакета
+			HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, receiveBuff_huart2_Size);		// настроить huart на прием следующего пакета
 		}
 	}
 	
 	
 	
+}
+
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
+  HAL_UART_Init(huart);
+	if(huart->Instance == USART3){
+		HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, receiveBuff_huart3_Size);		// настроить huart на прием следующего пакета
+	}
+	if(huart->Instance == USART2){
+		HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, receiveBuff_huart2_Size);		// настроить huart на прием следующего пакета
+  }
 }
 
 
@@ -291,7 +304,8 @@ int main(void)
 	TxData[7] = 0x00;
 	
 // Настройка прерывания от uart (нужное раскоментировать)
-//	HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, 1000);		// настроить прерывание huart на прием по флагу Idle
+	HAL_UARTEx_ReceiveToIdle_IT(&huart3, (uint8_t*) receiveBuff_huart3, receiveBuff_huart3_Size);		// настроить прерывание huart на прием по флагу Idle
+  HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t*) receiveBuff_huart2, receiveBuff_huart2_Size);		// настроить прерывание huart на прием по флагу Idle
 //	HAL_UART_Receive_IT(&huart3, (uint8_t*)receiveBuff_huart3, 16);	 // настроить прерывание huart на прием по достижения количества 16 байт
 
 
